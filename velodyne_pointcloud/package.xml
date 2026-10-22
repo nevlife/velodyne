@@ -20,6 +20,8 @@
   <depend>angles</depend>
   <depend>diagnostic_updater</depend>
   <depend>eigen</depend>
+  <depend>flux_cpp</depend>
+  <depend>flux_std_adapters</depend>
   <depend>geometry_msgs</depend>
   <depend>libpcl-all-dev</depend>
   <depend>message_filters</depend>

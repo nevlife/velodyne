@@ -14,6 +14,8 @@ find_package(ament_cmake REQUIRED)
 find_package(angles REQUIRED)
 find_package(diagnostic_updater REQUIRED)
 find_package(Eigen3 REQUIRED)
+find_package(flux_cpp REQUIRED)
+find_package(flux_std_adapters REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(message_filters REQUIRED)
 find_package(PCL REQUIRED COMPONENTS common)
@@ -83,6 +85,7 @@ target_include_directories(transform PUBLIC
 target_link_libraries(transform PUBLIC
   diagnostic_updater::diagnostic_updater
   Eigen3::Eigen
+  flux_cpp::flux_cpp
   message_filters::message_filters
   rclcpp::rclcpp
   tf2::tf2
@@ -94,6 +97,7 @@ target_link_libraries(transform PUBLIC
 target_link_libraries(transform PRIVATE
   rclcpp_components::component
 )
+target_include_directories(transform PRIVATE ${flux_std_adapters_INCLUDE_DIRS})
 
 install(TARGETS velodyne_cloud_types velodyne_rawdata transform
   EXPORT ${PROJECT_NAME}

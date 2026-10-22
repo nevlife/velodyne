@@ -44,6 +44,7 @@
 #include <rcl_interfaces/msg/parameter_descriptor.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_components/register_node_macro.hpp>
+#include <sensor_msgs/flux/point_cloud2_ros.hpp>
 
 #include "velodyne_pointcloud/organized_cloudXYZIRT.hpp"
 #include "velodyne_pointcloud/pointcloudXYZIRT.hpp"
@@ -102,6 +103,9 @@ Transform::Transform(const rclcpp::NodeOptions & options)
   std::string fixed_frame = this->declare_parameter("fixed_frame", "");
   std::string target_frame = this->declare_parameter("target_frame", "");
   bool organize_cloud = this->declare_parameter("organize_cloud", true);
+  std::string transport = this->declare_parameter("transport", "dds");
+  int flux_slot_size = this->declare_parameter("flux_slot_size", 4 << 20);
+  int flux_slot_count = this->declare_parameter("flux_slot_count", 8);
 
   RCLCPP_INFO(this->get_logger(), "correction angles: %s", calibration_file.c_str());
 
@@ -118,7 +122,13 @@ Transform::Transform(const rclcpp::NodeOptions & options)
   }
 
   // advertise output point cloud (before subscribing to input data)
-  output_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("velodyne_points", 10);
+  if (transport == "flux") {
+    flux_output_ = std::make_unique<flux::Publisher>(
+      *this, "velodyne_points", sensor_msgs::flux_msg::PointCloud2::kFingerprint,
+      flux_slot_size, flux_slot_count);
+  } else {
+    output_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("velodyne_points", 10);
+  }
 
   velodyne_scan_ = this->create_subscription<velodyne_msgs::msg::VelodyneScan>(
     "velodyne_packets", 10, std::bind(&Transform::processScan, this, std::placeholders::_1));
@@ -146,7 +156,7 @@ Transform::Transform(const rclcpp::NodeOptions & options)
 void Transform::processScan(
   const velodyne_msgs::msg::VelodyneScan::ConstSharedPtr scanMsg)
 {
-  if (output_->get_subscription_count() == 0 &&
+  if (output_ && output_->get_subscription_count() == 0 &&
     output_->get_intra_process_subscription_count() == 0)    // no one listening?
   {
     return;
@@ -172,7 +182,17 @@ void Transform::processScan(
   }
 
   // publish the accumulated cloud message
-  output_->publish(container_ptr_->finishCloud());
+  if (flux_output_) {
+    auto b = sensor_msgs::flux_msg::PointCloud2::build__(*flux_output_);
+    sensor_msgs::flux_msg::msg_to_frame(container_ptr_->finishCloud(), b);
+    const flux::Published p = b.commit__();
+    if (p != flux::Published::Ok) {
+      RCLCPP_WARN_THROTTLE(
+        this->get_logger(), *this->get_clock(), 5000, "flux publish: %s", flux::to_string(p));
+    }
+  } else {
+    output_->publish(container_ptr_->finishCloud());
+  }
   diag_topic_->tick(scanMsg->header.stamp);
 }
 
