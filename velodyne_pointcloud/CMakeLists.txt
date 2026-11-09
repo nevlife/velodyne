@@ -14,6 +14,7 @@ find_package(ament_cmake REQUIRED)
 find_package(angles REQUIRED)
 find_package(diagnostic_updater REQUIRED)
 find_package(Eigen3 REQUIRED)
+find_package(flux_wrapper REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(message_filters REQUIRED)
 find_package(PCL REQUIRED COMPONENTS common)
@@ -83,6 +84,7 @@ target_include_directories(transform PUBLIC
 target_link_libraries(transform PUBLIC
   diagnostic_updater::diagnostic_updater
   Eigen3::Eigen
+  flux_wrapper::flux_wrapper
   message_filters::message_filters
   rclcpp::rclcpp
   tf2::tf2
@@ -154,6 +156,7 @@ ament_export_dependencies(
   angles
   diagnostic_updater
   Eigen3
+  flux_wrapper
   geometry_msgs
   message_filters
   PCL

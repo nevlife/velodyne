@@ -43,6 +43,7 @@
 
 #include <diagnostic_updater/diagnostic_updater.hpp>
 #include <diagnostic_updater/publisher.hpp>
+#include <flux_wrapper/publisher.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <velodyne_msgs/msg/velodyne_scan.hpp>
@@ -67,7 +68,7 @@ private:
   void processScan(const velodyne_msgs::msg::VelodyneScan::ConstSharedPtr scanMsg);
 
   std::unique_ptr<velodyne_rawdata::RawData> data_;
-  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr output_;
+  std::unique_ptr<flux_wrapper::Publisher<sensor_msgs::msg::PointCloud2>> output_;
   rclcpp::Subscription<velodyne_msgs::msg::VelodyneScan>::SharedPtr velodyne_scan_;
 
   std::unique_ptr<velodyne_rawdata::DataContainerBase> container_ptr_;

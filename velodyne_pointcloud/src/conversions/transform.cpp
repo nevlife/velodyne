@@ -44,6 +44,7 @@
 #include <rcl_interfaces/msg/parameter_descriptor.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_components/register_node_macro.hpp>
+#include <flux_wrapper/publisher.hpp>
 
 #include "velodyne_pointcloud/organized_cloudXYZIRT.hpp"
 #include "velodyne_pointcloud/pointcloudXYZIRT.hpp"
@@ -118,7 +119,12 @@ Transform::Transform(const rclcpp::NodeOptions & options)
   }
 
   // advertise output point cloud (before subscribing to input data)
-  output_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("velodyne_points", 10);
+  // A VLS-128 rotation at 300 rpm is about 10 MiB.
+  flux_wrapper::PublisherOptions flux_options;
+  flux_options.max_message_size = 16 << 20;
+  flux_options.slot_count = 4;
+  output_ = std::make_unique<flux_wrapper::Publisher<sensor_msgs::msg::PointCloud2>>(
+    *this, "velodyne_points", rclcpp::QoS(10), flux_options);
 
   velodyne_scan_ = this->create_subscription<velodyne_msgs::msg::VelodyneScan>(
     "velodyne_packets", 10, std::bind(&Transform::processScan, this, std::placeholders::_1));
@@ -146,9 +152,7 @@ Transform::Transform(const rclcpp::NodeOptions & options)
 void Transform::processScan(
   const velodyne_msgs::msg::VelodyneScan::ConstSharedPtr scanMsg)
 {
-  if (output_->get_subscription_count() == 0 &&
-    output_->get_intra_process_subscription_count() == 0)    // no one listening?
-  {
+  if (output_->get_subscription_count() == 0) {  // no one listening?
     return;
   }
 
