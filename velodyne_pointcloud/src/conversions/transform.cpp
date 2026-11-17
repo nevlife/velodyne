@@ -119,12 +119,8 @@ Transform::Transform(const rclcpp::NodeOptions & options)
   }
 
   // advertise output point cloud (before subscribing to input data)
-  // A VLS-128 rotation at 300 rpm is about 10 MiB.
-  flux_wrapper::PublisherOptions flux_options;
-  flux_options.max_message_size = 16 << 20;
-  flux_options.slot_count = 4;
   output_ = std::make_unique<flux_wrapper::Publisher<sensor_msgs::msg::PointCloud2>>(
-    *this, "velodyne_points", rclcpp::QoS(10), flux_options);
+    *this, "velodyne_points", rclcpp::QoS(10));
 
   velodyne_scan_ = this->create_subscription<velodyne_msgs::msg::VelodyneScan>(
     "velodyne_packets", 10, std::bind(&Transform::processScan, this, std::placeholders::_1));
